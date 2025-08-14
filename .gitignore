@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+build/
+
+# caches
+.vite/
+.cache/
+coverage/
+
+# logs & TS metadata
+*.log
+*.tsbuildinfo
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# editors
+.vscode/
+.idea/
+
+# optional
+.venv/
+.DS_Store
+Thumbs.db

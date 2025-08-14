@@ -1,35 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+// App.tsx
+import React from 'react';
+import { DropZone, FileList, InfoModal } from './components';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [refresh, setRefresh] = React.useState(0);
+  const [infoOpen, setInfoOpen] = React.useState(false);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+    <div className="mx-auto max-w-5xl p-6">
+      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+        <div className="flex items-center justify-between border-slate-800 px-5 py-3">
+          <strong className="text-lg">noit: neural notework</strong>
+          <button
+            aria-label="Upload information"
+            title="Upload information"
+            onClick={() => setInfoOpen(true)}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
+          >
+            <strong>?</strong>
+          </button>
+        </div>
 
-export default App
+        <div className="space-y-4 px-5">
+          <DropZone onUploaded={() => setRefresh((n) => n + 1)} />
+          <div className="h-px bg-slate-800" />
+          <FileList refreshSignal={refresh} />
+        </div>
+
+        <InfoModal open={infoOpen} onClose={() => setInfoOpen(false)} />
+      </div>
+    </div>
+  );
+}

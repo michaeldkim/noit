@@ -55,7 +55,7 @@ export default function FileList({ refreshSignal }: { refreshSignal: number }) {
   return (
     <div className="grid gap-3 p-3">
       {files.length === 0 && (
-        <div className="p-4 text-slate-400">No files yet. Drop some above.</div>
+        <div className="text-center p-4 text-slate-400">no files yet? drop some above!</div>
       )}
       {files.map((f) => (
         <article key={f.id} className="rounded-xl border border-slate-800 bg-slate-900 p-3">

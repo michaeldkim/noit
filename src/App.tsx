@@ -15,7 +15,7 @@ export default function App() {
             aria-label="Upload information"
             title="Upload information"
             onClick={() => setInfoOpen(true)}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
           >
             <strong>?</strong>
           </button>
@@ -23,7 +23,7 @@ export default function App() {
 
         <div className="space-y-4 px-5">
           <DropZone onUploaded={() => setRefresh((n) => n + 1)} />
-          <div className="h-px bg-slate-800" />
+          <div className="font-semibold text-lg">your stuff...</div>
           <FileList refreshSignal={refresh} />
         </div>
 

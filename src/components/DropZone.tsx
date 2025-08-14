@@ -25,8 +25,8 @@ export default function DropZone({ onUploaded }: { onUploaded: () => void }) {
   return (
     <div
       className={[
-        'rounded-2xl border-2 border-dashed p-6 text-center transition',
-        'border-slate-600/60 bg-slate-900',
+        'rounded-2xl outline-3 outline-offset-3 outline-dashed p-6 text-center transition',
+        'outline-slate-600/60 bg-slate-900',
         drag ? 'ring-2 ring-sky-400/60 bg-slate-800' : ''
       ].join(' ')}
       onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
@@ -38,7 +38,7 @@ export default function DropZone({ onUploaded }: { onUploaded: () => void }) {
         <div className="flex items-center justify-center gap-3">
           <button
             type="button"
-            className="inline-flex items-center rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-md hover:bg-slate-700 disabled:opacity-60 font-semibold"
+            className="inline-flex items-center rounded-lg bg-slate-800 px-3 py-2 text-md hover:bg-slate-700 disabled:opacity-60 font-semibold"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
           >

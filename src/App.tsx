@@ -9,13 +9,13 @@ export default function App() {
   return (
     <div className="mx-auto max-w-5xl p-6">
       <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-        <div className="flex items-center justify-between border-slate-800 px-5 py-3">
+        <div className="flex items-center justify-between border-slate-800 px-5 py-4">
           <strong className="text-lg">noit: neural notework</strong>
           <button
             aria-label="Upload information"
             title="Upload information"
             onClick={() => setInfoOpen(true)}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-slate-200 hover:bg-slate-700"
           >
             <strong>?</strong>
           </button>

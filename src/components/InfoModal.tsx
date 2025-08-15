@@ -32,9 +32,9 @@ export default function InfoModal({ open, onClose }: Props) {
           <button
             ref={closeRef}
             onClick={onClose}
-            className="rounded-md bg-slate-800 px-2 py-1 text-sm hover:bg-slate-700"
+            className="h-7 w-7 rounded-full bg-slate-800 px-2 py-1 text-sm hover:bg-slate-700"
           >
-            <strong>x</strong>
+            <strong>X</strong>
           </button>
         </div>
         <div className="space-y-4 p-4 text-sm leading-relaxed">
@@ -56,7 +56,7 @@ export default function InfoModal({ open, onClose }: Props) {
             <div className="mb-1 font-semibold">where are files stored?</div>
             <p>
               files are saved <em>locally</em> in your browser:
-              {supportsOPFS() ? ' OPFS (fast) with IndexedDB fallback.' : ' IndexedDB for blobs (OPFS not available).'}
+              {supportsOPFS() ? ' OPFS (fast) with indexedDB fallback.' : ' indexedDB for blobs (OPFS not available).'}
               {' '}nothing leaves your device.
             </p>
           </div>

@@ -39,3 +39,31 @@ export function isAllowed(name: string, size: number): { ok: true } | { ok: fals
   if (size > MAX_FILE_SIZE_MB * 1024 * 1024) return { ok: false, reason: `> ${MAX_FILE_SIZE_MB} MB` };
   return { ok: true };
 }
+
+const MIME_TO_LABEL: Record<string, string> = {
+  'text/plain': 'text',
+  'text/markdown': 'markdown',
+  'application/pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/rtf': 'rtf',
+  'image/png': 'png',
+  'image/jpeg': 'jpeg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'image/bmp': 'bmp',
+  'image/tiff': 'tiff',
+  'image/heic': 'heic',
+  'application/octet-stream': 'binary'
+};
+
+export function typeLabel(mime: string | undefined, filename?: string): string {
+  if (mime && MIME_TO_LABEL[mime]) return MIME_TO_LABEL[mime];
+  if (mime?.startsWith('text/')) return 'text';
+  if (mime?.startsWith('image/')) return 'image';
+  if (mime?.startsWith('audio/')) return 'audio';
+  if (mime?.startsWith('video/')) return 'video';
+  if (mime?.startsWith('application/')) return 'document';
+  const ext = filename ? extOf(filename) : '';
+  return ext ? ext.toUpperCase() : 'file';
+}

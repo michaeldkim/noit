@@ -67,3 +67,34 @@ export function typeLabel(mime: string | undefined, filename?: string): string {
   const ext = filename ? extOf(filename) : '';
   return ext ? ext.toUpperCase() : 'file';
 }
+
+export type GroupKey = 'pdf' | 'image' | 'text' | 'word' | 'rtf' | 'other';
+
+export function groupKey(mime: string | undefined): GroupKey {
+  if (!mime) return 'other';
+  if (mime.startsWith('application/pdf')) return 'pdf';
+  if (mime.startsWith('image/')) return 'image';
+  if (mime.startsWith('text/')) return 'text';
+  if (
+    mime === 'application/msword' ||
+    mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ) return 'word';
+  if (mime === 'application/rtf') return 'rtf';
+  return 'other';
+}
+
+export function groupLabel(key: GroupKey): string {
+  return { pdf: 'pdfs', image: 'imgs', text: 'texts', word: 'docs', rtf: 'rtfs', other: 'other' }[key];
+}
+
+export function groupTone(key: GroupKey): { bg: string; ring: string } {
+  // Tailwind utility class names
+  switch (key) {
+    case 'pdf':   return { bg: 'bg-red-600',     ring: 'ring-red-300/40' };
+    case 'image': return { bg: 'bg-sky-600',     ring: 'ring-sky-300/40' };
+    case 'text':  return { bg: 'bg-slate-600',   ring: 'ring-slate-300/40' };
+    case 'word':  return { bg: 'bg-indigo-600',  ring: 'ring-indigo-300/40' };
+    case 'rtf':   return { bg: 'bg-amber-600',   ring: 'ring-amber-300/40' };
+    default:      return { bg: 'bg-violet-600',  ring: 'ring-violet-300/40' };
+  }
+}

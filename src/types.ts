@@ -11,3 +11,14 @@ export interface FileMeta {
     storage: BlobStorage;
     location: string;
 }
+
+export type NoteKind = 'notes' | 'todo' | 'accounts' | 'files';
+
+export interface Note {
+  id?: number;
+  title: string;
+  kind: NoteKind;
+  body: string;          // ignored when kind === 'files'
+  createdAt: string;
+  updatedAt: string;
+}

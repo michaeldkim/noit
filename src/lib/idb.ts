@@ -1,11 +1,12 @@
 // idb.ts
-import type { FileMeta } from '../types';
+import type { FileMeta, Note } from '../types';
 import { sniffMime } from './fileTypes';
 
 const DB_NAME = 'note-graph';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const META_STORE = 'files';
 const BLOB_STORE = 'fileBlobs';
+const NOTES_STORE = 'notes';
 
 function withReq<T>(req: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -19,6 +20,7 @@ export async function openDB(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
+
       if (!db.objectStoreNames.contains(META_STORE)) {
         const meta = db.createObjectStore(META_STORE, { keyPath: 'id', autoIncrement: true });
         meta.createIndex('createdAt', 'createdAt');
@@ -26,6 +28,11 @@ export async function openDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(BLOB_STORE)) {
         db.createObjectStore(BLOB_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(NOTES_STORE)) {
+        const notes = db.createObjectStore(NOTES_STORE, { keyPath: 'id', autoIncrement: true });
+        notes.createIndex('kind', 'kind');
+        notes.createIndex('updatedAt', 'updatedAt');
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -85,7 +92,8 @@ export async function addFile(file: File): Promise<AddResult> {
   };
 
   const db1 = await openDB();
-  const id = await withReq<number>(db1.transaction(META_STORE, 'readwrite').objectStore(META_STORE).add(base as any));
+  const idKey = await withReq<IDBValidKey>(db1.transaction(META_STORE, 'readwrite').objectStore(META_STORE).add(base as any));
+  const id = Number(idKey as number);
   db1.close();
 
   if (base.storage === 'opfs') {
@@ -131,7 +139,7 @@ export async function getFileBlob(id: number): Promise<Blob | null> {
   const meta = await getFileMeta(id);
   if (!meta) return null;
   if (meta.storage === 'opfs') {
-    try { return await readOPFSFile(id); } catch {}
+    try { return await readOPFSFile(id); } catch { }
   }
   const db = await openDB();
   const rec = await withReq<any>(db.transaction(BLOB_STORE, 'readonly').objectStore(BLOB_STORE).get(id));
@@ -142,7 +150,7 @@ export async function getFileBlob(id: number): Promise<Blob | null> {
 export async function deleteFile(id: number): Promise<void> {
   const meta = await getFileMeta(id);
   if (meta?.storage === 'opfs') {
-    try { await deleteOPFSFile(id); } catch {}
+    try { await deleteOPFSFile(id); } catch { }
   } else {
     const dbb = await openDB();
     await withReq(dbb.transaction(BLOB_STORE, 'readwrite').objectStore(BLOB_STORE).delete(id));
@@ -153,4 +161,30 @@ export async function deleteFile(id: number): Promise<void> {
   db.close();
 }
 
+// ---------- Notes API ----------
+export async function saveNote(draft: Omit<Note, 'createdAt'|'updatedAt'> & { id?: number }): Promise<number> {
+  const now = new Date().toISOString();
+  const db = await openDB();
+  const tx = db.transaction(NOTES_STORE, 'readwrite');
+  const store = tx.objectStore(NOTES_STORE);
 
+  if (draft.id) {
+    const current = await withReq<any>(store.get(draft.id));
+    const updated: Note = {
+      ...(current ?? {}),
+      ...draft,
+      updatedAt: now,
+      createdAt: current?.createdAt ?? now
+    };
+    await withReq(store.put(updated as any));
+    await new Promise<void>((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+    db.close();
+    return draft.id;
+  } else {
+    const toAdd: Note = { ...draft, createdAt: now, updatedAt: now };
+    const idKey = await withReq<IDBValidKey>(store.add(toAdd as any));
+    await new Promise<void>((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+    db.close();
+    return Number(idKey as number);
+  }
+}

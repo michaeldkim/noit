@@ -260,6 +260,23 @@ export async function countTotalsInEnv(env: string): Promise<{ files: number; no
   db.close();
   return { files, notes };
 }
+// list notes of a given kind within an env (used for accounts sidebar)
+export async function listNotesByKind(kind: string, env?: string) {
+  const db = await openDB();
+  const tx = db.transaction(NOTES_STORE, 'readonly');
+  const store = tx.objectStore(NOTES_STORE);
+  try {
+    const rows = await withReq<any[]>(store.index('kind').getAll(kind));
+    db.close();
+    return (rows as any).filter((n: any) => (env ? (n.env ?? 'main') === env : true));
+  } catch {
+    const rows = await withReq<any[]>(store.getAll());
+    db.close();
+    return (rows as any).filter(
+      (n: any) => n.kind === kind && (env ? (n.env ?? 'main') === env : true)
+    );
+  }
+}
 // global search (all envs) by filename substring
 export async function searchFilesGlobal(q: string, limit = 50): Promise<FileMeta[]> {
   const needle = q.trim().toLowerCase();

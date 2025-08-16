@@ -27,6 +27,19 @@ export default function GlobalSearchModal({ open, onClose }: Props) {
     return () => clearTimeout(t);
   }, [open]);
 
+  // close with Esc
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            onClose();
+        }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   React.useEffect(() => {
     if (!open) return;
     let keep = true;
@@ -64,7 +77,7 @@ export default function GlobalSearchModal({ open, onClose }: Props) {
     <>
       <div className="fixed inset-0 z-[60] bg-black/60" onClick={onClose} />
       <div className="fixed inset-0 z-[60] grid place-items-start p-6 pt-20">
-        <div className="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
+        <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
           <div className="border-b border-slate-800 p-3">
             <input
               ref={inputRef}
@@ -92,7 +105,7 @@ export default function GlobalSearchModal({ open, onClose }: Props) {
                         {formatSize(f.size)}
                       </span>
                       <span className="whitespace-nowrap rounded border border-slate-700 px-1.5 py-0.5 text-[11px] text-slate-300">
-                        {new Date(f.createdAt).toLocaleString()}
+                        {new Date(f.createdAt).toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <span className="ml-auto whitespace-nowrap rounded border border-slate-700 px-1.5 py-0.5 text-[11px] text-sky-300">
                         {String((f as any).env ?? 'main')}
@@ -120,9 +133,9 @@ export default function GlobalSearchModal({ open, onClose }: Props) {
           <div className="flex items-center justify-end gap-2 border-t border-slate-800 p-2">
             <button
               onClick={onClose}
-              className="rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm hover:bg-slate-700"
+              className="rounded-md bg-slate-800 px-3 py-1.5 text-sm hover:bg-indigo-800"
             >
-              close
+              esc
             </button>
           </div>
         </div>

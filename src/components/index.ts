@@ -7,3 +7,5 @@ export { default as SlidePanel } from './SlidePanel';
 export { default as Notepad } from './Notepad';
 export { default as ConfirmModal } from './ConfirmModal';
 export { default as GlobalSearchModal } from './GlobalSearchModal';
+export { default as AccountsEditor } from './AccountsEditor';
+export { default as AccountsList } from './AccountsList';

@@ -1,14 +1,17 @@
 // FILE: src/App.tsx
 // Only the container width and grid spans changed.
 import React from 'react';
-import { InfoModal, UploadOverlay, SlidePanel, Notepad, FileList, GlobalSearchModal } from './components';
+import { InfoModal, UploadOverlay, SlidePanel, Notepad, FileList, GlobalSearchModal, AccountsList } from './components';
 import { getCurrentEnv } from './lib/env';
 import { listFiles } from './lib/idb';
-import type { FileMeta } from './types';
+import type { FileMeta, NoteKind } from './types';
 
 export default function App() {
   const [files, setFiles] = React.useState<FileMeta[]>([]);
   const [refresh, setRefresh] = React.useState(0);
+  const [accountsRefresh, setAccountsRefresh] = React.useState(0); // accounts list refresh
+  const [noteKind, setNoteKind] = React.useState<NoteKind>('notes');
+  const [prefillAccount, setPrefillAccount] = React.useState<{ title?: string; body?: string }>();
   const [infoOpen, setInfoOpen] = React.useState(false);
   const [uploadOpen, setUploadOpen] = React.useState(false);
   //const [selected, setSelected] = React.useState<GroupKey | null>(null);
@@ -76,14 +79,41 @@ export default function App() {
       </header>
 
       <main className="px-6 pb-24 pt-16">
-        <section className="mx-auto w-full max-w-7xl">{/* wider page width */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div className={hasFiles ? 'lg:col-span-6' : 'lg:col-span-12'}>{/* 6/6 split when files exist */}
-              <Notepad env={env} onFilesUploaded={() => setRefresh((n) => n + 1)} />
+        <section className="mx-auto w-full">{/* wider page width */}
+          <div className="flex justify-between px-10">
+            {/* accounts list on the LEFT when accounts kind is active */}
+
+            <aside className={"basis-1/4"}>
+              <AccountsList
+                env={env}
+                refreshSignal={accountsRefresh}
+                onSelect={(a) => {
+                  setNoteKind('accounts');
+                  setPrefillAccount({ title: a.title, body: a.body });
+                }}
+              />
+            </aside>
+
+
+            {/* notepad column adjusts based on side panels */}
+            <div
+              className={"basis-1/3 "}
+            >
+              <Notepad
+                env={env}
+                kind={noteKind}
+                onKindChange={setNoteKind}
+                prefillAccount={prefillAccount}
+                onFilesUploaded={() => setRefresh((n) => n + 1)}
+                onSaved={(k) => {
+                  if (k === 'accounts') setAccountsRefresh((n) => n + 1);
+                }}
+              />
             </div>
 
+            {/* files list on the RIGHT when files exist */}
             {hasFiles && (
-              <aside className="lg:col-span-6">
+              <aside className={"basis-1/3"}>
                 <FileList refreshSignal={refresh} env={env} />
               </aside>
             )}

@@ -13,7 +13,7 @@ export interface FileMeta {
     env?: string;
 }
 
-export type NoteKind = 'notes' | 'todo' | 'accounts' | 'files';
+export type NoteKind = 'notes' | 'to-do' | 'accounts' | 'files';
 
 export interface Note {
   id?: number;

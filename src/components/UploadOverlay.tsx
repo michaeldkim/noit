@@ -29,14 +29,14 @@ export default function UploadOverlay({ open, onClose, onUploaded }: Props) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+        <div className="flex items-center justify-between px-4 pt-3">
           <strong className="text-base">add files</strong>
           <button
             ref={closeBtnRef}
             onClick={onClose}
-            className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm hover:bg-slate-700"
+            className="h-8 w-8 rounded-full font-bold px-2 py-1 text-sm hover:bg-indigo-800"
           >
-            close
+            X
           </button>
         </div>
         <div className="p-5">

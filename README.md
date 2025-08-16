@@ -1,69 +1,47 @@
-# React + TypeScript + Vite
+# FILE: README.md
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# noit — neural notework
 
-Currently, two official plugins are available:
+a local-first productivity dashboard. drop files, take notes, and keep work separated by “pages” (environments). everything is stored in your browser using IndexedDB / OPFS.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **drag & drop files** (pdf, images, text, word…) with type detection
+- **local storage**: metadata in IndexedDB; blobs in OPFS when available, otherwise IndexedDB
+- **file list panel**: half-screen height, scrollable, search by name, filter by type, open/download/delete
+- **notepad**: title + kind selector (`notes`, `to-do`, `accounts`, `files`); when `files` is selected, the uploader appears inline
+- **pages (environments)**: switch contexts so files/notes don’t mix; default page is `main` (cannot be deleted)
+- **hard delete (with confirm)**: delete a page and all its data with a confirmation modal (ESC/Enter, focus-trapped, shows counts)
+- **global search**: `ctrl/cmd + k` searches files across **all** pages
+- **lowercase ui**: labels and controls use lowercase by design
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+## stack
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- react + typescript + vite
+- tailwind css
+- IndexedDB + OPFS (origin private file system)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## prerequisites
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **node.js 22 LTS** (recommended)  
+  verify with:
+  ```bash
+  node -v
+  npm -v
+
+# install deps
+npm install
+
+# start dev server
+npm run dev
+
+# build for production
+npm run build
+npm run preview
+

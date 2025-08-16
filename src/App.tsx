@@ -62,7 +62,7 @@ export default function App() {
         aria-label="Add files"
         title="Add files"
         onClick={() => setUploadOpen(true)}
-        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-sky-600 text-2xl text-white shadow-lg hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400"
+        className="fixed bottom-6 right-6 z-40 flex h-8 w-8 items-center justify-center rounded-full text-2xl text-white shadow-lg hover:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-sky-400"
       >
         +
       </button>

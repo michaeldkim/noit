@@ -5,7 +5,7 @@ import { groupKey, groupLabel, typeLabel } from '../lib/fileTypes';
 import type { GroupKey } from '../lib/fileTypes';
 import { deleteFile, getFileBlob } from '../lib/idb';
 import { getCurrentEnv, listEnvs, addEnv, setCurrentEnv, removeEnv, canDeleteEnv } from '../lib/env';
-import { deleteAllInEnv } from '../lib/idb';
+import { deleteAllInEnv, countTotalsInEnv } from '../lib/idb';
 import { ConfirmModal } from '../components'
 
 type Props = {
@@ -43,6 +43,9 @@ export default function SlidePanel({ open, group, files, onClose, onChanged, onF
     const [envs, setEnvs] = React.useState<string[]>(listEnvs());
     const [env, setEnv] = React.useState<string>(getCurrentEnv());
     const [confirmOpen, setConfirmOpen] = React.useState(false);
+    const [deleting, setDeleting] = React.useState(false);
+    const [counts, setCounts] = React.useState<{ files: number; notes: number }>({ files: 0, notes: 0 });
+
     const list = React.useMemo(() => files.filter(f => (group ? groupKey(f.type) === group : false)), [files, group]);
     const title = group ? groupLabel(group) : '';
 
@@ -106,6 +109,10 @@ export default function SlidePanel({ open, group, files, onClose, onChanged, onF
                                         if (!canDeleteEnv(env)) return;
                                         setEnvMenuOpen(false);
                                         setConfirmOpen(true);
+                                        (async () => {
+                                            setCounts(await countTotalsInEnv(env));
+                                            setConfirmOpen(true);
+                                        })();
                                     }}
                                 >
                                     delete page
@@ -161,14 +168,21 @@ export default function SlidePanel({ open, group, files, onClose, onChanged, onF
                 confirmLabel="delete"
                 cancelLabel="cancel"
                 onCancel={() => setConfirmOpen(false)}
+                busy={deleting}
+                counts={counts}
                 onConfirm={async () => {
-                    setConfirmOpen(false);
-                    await deleteAllInEnv(env);
-                    removeEnv(env);
-                    const next = getCurrentEnv(); // env.ts sets to 'main' if current removed
-                    setEnv(next);
-                    setEnvs(listEnvs());
-                    onEnvChange?.(next);
+                    try {
+                        setDeleting(true);
+                        await deleteAllInEnv(env);
+                        removeEnv(env);
+                        const next = getCurrentEnv(); // env.ts sets to 'main' if current removed
+                        setEnv(next);
+                        setEnvs(listEnvs());
+                        onEnvChange?.(next);
+                    } finally {
+                        setDeleting(false);
+                        setConfirmOpen(false);
+                    }
                 }}
             />
         </>

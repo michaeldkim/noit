@@ -1,7 +1,7 @@
 // FILE: src/App.tsx
 // Only the container width and grid spans changed.
 import React from 'react';
-import { InfoModal, UploadOverlay, SlidePanel, Notepad, FileList } from './components';
+import { InfoModal, UploadOverlay, SlidePanel, Notepad, FileList, GlobalSearchModal } from './components';
 import { getCurrentEnv } from './lib/env';
 import { listFiles } from './lib/idb';
 import type { FileMeta } from './types';
@@ -12,7 +12,8 @@ export default function App() {
   const [infoOpen, setInfoOpen] = React.useState(false);
   const [uploadOpen, setUploadOpen] = React.useState(false);
   //const [selected, setSelected] = React.useState<GroupKey | null>(null);
-  const [panelOpen, setPanelOpen] = React.useState(false);
+  const [panelOpen, setPanelOpen] = React.useState(false); // slide panel toggle
+  const [searchOpen, setSearchOpen] = React.useState(false); // ctrl+k
   const [env, setEnv] = React.useState<string>(getCurrentEnv());
 
   React.useEffect(() => {
@@ -23,19 +24,53 @@ export default function App() {
     })();
   }, [refresh, env]);
 
+  // (ctrl + space) opens global search
+  React.useEffect(() => {
+    const DEBUG_KEYS = false; // set false to silence logs
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const tag = (t?.tagName || '').toLowerCase();
+      const isEditable = (t?.isContentEditable === true) || tag === 'input' || tag === 'textarea';
+      if (DEBUG_KEYS) console.log('[hotkey]', { key: e.key, code: e.code, ctrl: e.ctrlKey, tag });
+      if (isEditable) return; // don't hijack while typing
+      const key = (e.key || '').toLowerCase();
+      const code = e.code;
+      const isCtrlSpace = e.ctrlKey && (code === 'Space' || key === ' ' || key === 'spacebar');
+      if (isCtrlSpace) {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const hasFiles = files.length > 0;
 
   return (
     <div className="min-h-dvh bg-slate-950 text-slate-100">
       <header className="fixed inset-x-0 top-0 z-30">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <div className="relative mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <button
             aria-label={panelOpen ? 'close panel' : 'open panel'}
             title={panelOpen ? 'close panel' : 'open panel'}
             onClick={() => setPanelOpen((v) => !v)}
             className="fixed px-2 py-1 left-3 top-3 z-40 flex h-8 w-auto items-center justify-center rounded-full font-bold text-slate-100 hover:bg-indigo-800"
           >
-            {panelOpen ? '):' : env + ' (:' }
+            {panelOpen ? '):' : env + ' (:'}
+          </button>
+        </div>
+        <div className="fixed  left-1/2 top-1.1 -translate-x-1/2 -translate-y-1/2">
+          <button
+            aria-label="open search"
+            title="open search"
+            onClick={() => setSearchOpen(true)}
+            className="inline-flex items-center gap-2 font-bold rounded-md px-2.5 py-1.5 text-sm text-slate-100 hover:bg-slate-700 "
+          >
+            search?
+            <kbd className="hidden sm:inline rounded border border-slate-600 bg-slate-900 px-1 text-[10px] leading-4 text-slate-300">
+              ctrl + space
+            </kbd>
           </button>
         </div>
       </header>
@@ -49,7 +84,7 @@ export default function App() {
 
             {hasFiles && (
               <aside className="lg:col-span-6">
-                <FileList refreshSignal={refresh} env={env}/>
+                <FileList refreshSignal={refresh} env={env} />
               </aside>
             )}
           </div>
@@ -82,6 +117,7 @@ export default function App() {
         onEnvChange={(e) => { setEnv(e); setRefresh((n) => n + 1); }}
         onChanged={() => setRefresh((n) => n + 1)}
       />
+      <GlobalSearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

@@ -62,7 +62,7 @@ open the printed localhost url in a modern browser. opfs works best in chromium-
 
 ## keyboard shortcuts
 
-- **ctrl/cmd  k** → open global search  
+- **ctrl + space** → open global search  
 - **esc** → close modals / menus  
 - **enter** → confirm in the delete modal  
 

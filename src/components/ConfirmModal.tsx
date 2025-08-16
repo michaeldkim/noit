@@ -9,6 +9,8 @@ type Props = {
   cancelLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  busy?: boolean;
+  counts?: { files: number, notes: number };
 };
 
 export default function ConfirmModal({
@@ -19,6 +21,8 @@ export default function ConfirmModal({
   cancelLabel = 'cancel',
   onConfirm,
   onCancel,
+  busy=false,
+  counts,
 }: Props) {
   const cancelRef = React.useRef<HTMLButtonElement | null>(null);
   const confirmRef = React.useRef<HTMLButtonElement | null>(null);
@@ -33,9 +37,14 @@ export default function ConfirmModal({
 
     function onKeydown(e: KeyboardEvent) {
       if (!open) return;
-      if (e.key === 'Escape') { e.preventDefault(); onCancel(); return; }
-      if (e.key === 'Enter') { e.preventDefault(); onConfirm(); return; }
+      if (busy) {
+        if (e.key === 'Escape' || e.key === 'Enter') {e.preventDefault(); onCancel(); return; }
+      } else {
+        if (e.key === 'Escape') { e.preventDefault(); onCancel(); return; }
+        if (e.key === 'Enter') { e.preventDefault(); onConfirm(); return; }
+      }
       if (e.key !== 'Tab') return;
+
       // trap tab within modal
       const focusables = [cancelRef.current, confirmRef.current].filter(Boolean) as HTMLElement[];
       if (focusables.length === 0) return;
@@ -71,15 +80,25 @@ export default function ConfirmModal({
           aria-modal="true"
           aria-labelledby={titleId}
           aria-describedby={descId}
+          aria-busy={busy}
           className="w-full max-w-sm rounded-xl border border-slate-800 bg-slate-900 p-4 shadow-xl"
         >
           <div id={titleId} className="mb-2 text-base font-semibold">{title}</div>
           <p id={descId} className="mb-4 text-sm text-slate-300">{message}</p>
+          {counts && (
+            <div className="mb-4 text-xs text-slate-400">
+              files: <span className="font-semibold text-slate-300">{counts.files}</span>
+              {' '}• notes: <span className="font-semibold text-slate-300">{counts.notes}</span>
+              {' '}• total: <span className="font-semibold text-slate-300">{counts.files + counts.notes}</span>
+            </div>
+          )}
+
           <div className="flex justify-end gap-2">
             <button
               ref={cancelRef}
               className="rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm hover:bg-slate-700"
               onClick={onCancel}
+              disabled={busy}
             >
               {cancelLabel}
             </button>
@@ -87,8 +106,9 @@ export default function ConfirmModal({
               ref={confirmRef}
               className="rounded-md border border-rose-900 bg-rose-950 px-3 py-1.5 text-sm text-rose-200 hover:bg-rose-900/40"
               onClick={onConfirm}
+              disabled={busy}
             >
-              {confirmLabel}
+              {busy ? 'deleting...' : confirmLabel}
             </button>
           </div>
         </div>

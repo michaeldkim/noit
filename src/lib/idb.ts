@@ -4,10 +4,20 @@ import { sniffMime } from './fileTypes';
 import { getCurrentEnv } from './env';
 
 const DB_NAME = 'note-graph';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const META_STORE = 'files';
 const BLOB_STORE = 'fileBlobs';
 const NOTES_STORE = 'notes';
+
+// idempotent index creation (avoids @ts-expect-error on DOMStringList.contains)
+function ensureIndex(
+  store: IDBObjectStore,
+  name: string,
+  keyPath: string | string[],
+  options?: IDBIndexParameters
+) {
+  try { store.createIndex(name, keyPath as any, options); } catch { /* exists */ }
+}
 
 function withReq<T>(req: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -21,20 +31,31 @@ export async function openDB(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-
+      let meta: IDBObjectStore;
       if (!db.objectStoreNames.contains(META_STORE)) {
-        const meta = db.createObjectStore(META_STORE, { keyPath: 'id', autoIncrement: true });
-        meta.createIndex('createdAt', 'createdAt');
-        meta.createIndex('name', 'name');
+        meta = db.createObjectStore(META_STORE, { keyPath: 'id', autoIncrement: true });
+      } else {
+        meta = req.transaction!.objectStore(META_STORE);
       }
+      ensureIndex(meta, 'createdAt', 'createdAt');
+      ensureIndex(meta, 'name', 'name');
+      ensureIndex(meta, 'env', 'env', { unique: false });
+
+      // blobs store
       if (!db.objectStoreNames.contains(BLOB_STORE)) {
         db.createObjectStore(BLOB_STORE, { keyPath: 'id' });
       }
+
+      // notes
+      let notes: IDBObjectStore;
       if (!db.objectStoreNames.contains(NOTES_STORE)) {
-        const notes = db.createObjectStore(NOTES_STORE, { keyPath: 'id', autoIncrement: true });
-        notes.createIndex('kind', 'kind');
-        notes.createIndex('updatedAt', 'updatedAt');
+        notes = db.createObjectStore(NOTES_STORE, { keyPath: 'id', autoIncrement: true });
+      } else {
+        notes = req.transaction!.objectStore(NOTES_STORE);
       }
+      ensureIndex(notes, 'kind', 'kind');
+      ensureIndex(notes, 'updatedAt', 'updatedAt');
+      ensureIndex(notes, 'env', 'env', { unique: false });
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -126,10 +147,19 @@ export async function addFile(file: File): Promise<AddResult> {
 
 export async function listFiles(): Promise<FileMeta[]> {
   const db = await openDB();
-  const rows = await withReq<any[]>(db.transaction(META_STORE, 'readonly').objectStore(META_STORE).getAll());
-  db.close();
   const env = getCurrentEnv();
-  return (rows as any).filter((r:any) => (r.env ?? 'main') === env);
+  const tx = db.transaction(META_STORE, 'readonly');
+  const store = tx.objectStore(META_STORE);
+  try {
+    const idx = store.index('env');
+    const rows = await withReq<any[]>(idx.getAll(env));
+    db.close();
+    return rows as any;
+  } catch {
+    const rows = await withReq<any[]>(store.getAll());
+    db.close();
+    return (rows as any).filter((r: any) => (r.env ?? 'main') === env);
+  }
 }
 
 export async function getFileMeta(id: number): Promise<FileMeta | null> {
@@ -208,7 +238,41 @@ export async function deleteAllInEnv(env: string): Promise<void> {
     db4.close();
   }
 }
-
+// counts for confirm modal (no env index yet, filter in-memory)
+export async function countTotalsInEnv(env: string): Promise<{ files: number; notes: number }> {
+  const db = await openDB();
+  const tx1 = db.transaction(META_STORE, 'readonly');
+  const s1 = tx1.objectStore(META_STORE);
+  let files = 0;
+  try { files = await withReq<number>(s1.index('env').count(env)); }
+  catch {
+    const all = await withReq<any[]>(s1.getAll());
+    files = all.filter((m) => (m.env ?? 'main') === env).length;
+  }
+  const tx2 = db.transaction(NOTES_STORE, 'readonly');
+  const s2 = tx2.objectStore(NOTES_STORE);
+  let notes = 0;
+  try { notes = await withReq<number>(s2.index('env').count(env)); }
+  catch {
+    const all = await withReq<any[]>(s2.getAll());
+    notes = all.filter((n) => (n.env ?? 'main') === env).length;
+  }
+  db.close();
+  return { files, notes };
+}
+// global search (all envs) by filename substring
+export async function searchFilesGlobal(q: string, limit = 50): Promise<FileMeta[]> {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return [];
+  const db = await openDB();
+  const store = db.transaction(META_STORE, 'readonly').objectStore(META_STORE);
+  const rows = await withReq<any[]>(store.getAll());
+  db.close();
+  return (rows as any)
+    .filter((r: any) => (r.name ?? '').toLowerCase().includes(needle))
+    .sort((a: any, b: any) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+    .slice(0, limit);
+}
 // ---------- Notes API ----------
 export async function saveNote(
   draft: Omit<Note, 'createdAt'|'updatedAt'> & { id?: number },

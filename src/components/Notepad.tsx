@@ -4,13 +4,13 @@ import type { NoteKind } from '../types';
 import DropZone from './DropZone';
 
 const KINDS: { value: NoteKind; label: string }[] = [
-  { value: 'notes',    label: 'Notes' },
-  { value: 'todo',     label: 'To-do' },
-  { value: 'accounts', label: 'Accounts' },
-  { value: 'files',    label: 'Files' }
+  { value: 'notes',    label: 'notes' },
+  { value: 'todo',     label: 'to-do' },
+  { value: 'accounts', label: 'accounts' },
+  { value: 'files',    label: 'files' }
 ];
 
-export default function Notepad({ onFilesUploaded }: { onFilesUploaded?: () => void }) {
+export default function Notepad({ onFilesUploaded, env }: { onFilesUploaded?: () => void; env?: string }) {
   const [title, setTitle] = React.useState('');
   const [kind, setKind] = React.useState<NoteKind>('notes');
   const [body, setBody] = React.useState('');
@@ -21,7 +21,7 @@ export default function Notepad({ onFilesUploaded }: { onFilesUploaded?: () => v
     setSaving(true);
     try {
       const now = new Date().toLocaleTimeString();
-      await saveNote({ title, kind, body });
+      await saveNote({ title, kind, body }, env);
       setSavedAt(now);
     } finally {
       setSaving(false);
@@ -34,7 +34,7 @@ export default function Notepad({ onFilesUploaded }: { onFilesUploaded?: () => v
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Title"
+          placeholder="title"
           className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-sky-500 sm:max-w-sm"
         />
         <select
@@ -47,7 +47,7 @@ export default function Notepad({ onFilesUploaded }: { onFilesUploaded?: () => v
       </div>
 
       {kind === 'files' ? (
-        <div className="mb-4">
+        <div className="my-6">
           {/* why: lets Notepad trigger refresh in App when files are added */}
           <DropZone onUploaded={() => onFilesUploaded?.()} />
         </div>
@@ -56,9 +56,9 @@ export default function Notepad({ onFilesUploaded }: { onFilesUploaded?: () => v
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder={
-            kind === 'notes' ? 'Write something down…'
-            : kind === 'todo' ? 'Things to do… (one per line works well)'
-            : 'Add details…'
+            kind === 'notes' ? 'write something down…'
+            : kind === 'todo' ? 'things to do… (one per line works well)'
+            : 'add details…'
           }
           rows={10}
           className="mb-4 w-full resize-y rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm leading-6 outline-none placeholder:text-slate-500 focus:ring-2 focus:ring-sky-500"
@@ -67,14 +67,14 @@ export default function Notepad({ onFilesUploaded }: { onFilesUploaded?: () => v
 
       <div className="flex items-center justify-between">
         <div className="text-xs text-slate-400">
-          {savedAt ? `Saved ${savedAt}` : 'Not saved yet'}
+          {savedAt ? `saved ${savedAt}` : 'not saved yet'}
         </div>
         <button
           onClick={onSave}
           disabled={saving || (!title && kind !== 'files' && !body)}
           className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700 disabled:opacity-60"
         >
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'saving…' : 'save'}
         </button>
       </div>
     </div>

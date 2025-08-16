@@ -10,6 +10,7 @@ export interface FileMeta {
     createdAt: string;
     storage: BlobStorage;
     location: string;
+    env?: string;
 }
 
 export type NoteKind = 'notes' | 'todo' | 'accounts' | 'files';
@@ -21,4 +22,5 @@ export interface Note {
   body: string;          // ignored when kind === 'files'
   createdAt: string;
   updatedAt: string;
+  env?: string;
 }

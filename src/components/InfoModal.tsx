@@ -32,7 +32,7 @@ export default function InfoModal({ open, onClose }: Props) {
           <button
             ref={closeRef}
             onClick={onClose}
-            className="h-7 w-7 rounded-full bg-slate-800 px-2 py-1 text-sm hover:bg-slate-700"
+            className="h-7 w-7 rounded-full bg-slate-800 px-2 py-1 text-sm font-bold hover:bg-indigo-800"
           >
             <strong>X</strong>
           </button>

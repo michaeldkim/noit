@@ -11,7 +11,7 @@ function formatSize(bytes: number): string {
     return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
-export default function FileList({ refreshSignal }: { refreshSignal: number }) {
+export default function FileList({ refreshSignal, env }: { refreshSignal: number; env?: string }) {
     const [files, setFiles] = React.useState<FileMeta[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [open, setOpen] = React.useState<Set<number>>(new Set());
@@ -31,7 +31,7 @@ export default function FileList({ refreshSignal }: { refreshSignal: number }) {
                 setLoading(false);
             }
         })();
-    }, [refreshSignal]);
+    }, [refreshSignal, env]);
 
     // available type labels (unique, sorted)
     const typeOptions = React.useMemo(() => {
@@ -177,7 +177,7 @@ export default function FileList({ refreshSignal }: { refreshSignal: number }) {
                     <div className="grid gap-3 p-3">
                         {filtered.length === 0 && (
                             <div className="p-4 text-slate-400">
-                                {q || typeFilter ? 'No matching files.' : 'No files yet.'}
+                                {q || typeFilter ? 'no matching files.' : 'no files yet.'}
                             </div>
                         )}
 

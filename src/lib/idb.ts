@@ -1,6 +1,7 @@
 // idb.ts
 import type { FileMeta, Note } from '../types';
 import { sniffMime } from './fileTypes';
+import { getCurrentEnv } from './env';
 
 const DB_NAME = 'note-graph';
 const DB_VERSION = 3;
@@ -80,6 +81,7 @@ async function deleteOPFSFile(id: number): Promise<void> {
 export interface AddResult { id: number }
 
 export async function addFile(file: File): Promise<AddResult> {
+  const env = getCurrentEnv();
   const normalizedType = sniffMime(file.name, file.type || undefined);
   const base = {
     name: file.name,
@@ -88,7 +90,8 @@ export async function addFile(file: File): Promise<AddResult> {
     lastModified: file.lastModified,
     createdAt: new Date().toISOString(),
     storage: supportsOPFS() ? ('opfs' as const) : ('idb' as const),
-    location: ''
+    location: '',
+    env
   };
 
   const db1 = await openDB();
@@ -125,7 +128,8 @@ export async function listFiles(): Promise<FileMeta[]> {
   const db = await openDB();
   const rows = await withReq<any[]>(db.transaction(META_STORE, 'readonly').objectStore(META_STORE).getAll());
   db.close();
-  return rows as any;
+  const env = getCurrentEnv();
+  return (rows as any).filter((r:any) => (r.env ?? 'main') === env);
 }
 
 export async function getFileMeta(id: number): Promise<FileMeta | null> {
@@ -161,9 +165,57 @@ export async function deleteFile(id: number): Promise<void> {
   db.close();
 }
 
+// hard-delete everything in an environment (files + blobs + notes)
+export async function deleteAllInEnv(env: string): Promise<void> {
+  // collect file ids in this env
+  const db = await openDB();
+  const metas = (await withReq<any[]>(
+    db.transaction(META_STORE, 'readonly').objectStore(META_STORE).getAll()
+  )) as any[];
+  db.close();
+  const targets = metas.filter((m) => (m.env ?? 'main') === env);
+
+  // delete OPFS blobs first (outside of IDB tx)
+  for (const m of targets) {
+    if (m.storage === 'opfs') {
+      try { await deleteOPFSFile(m.id); } catch {}
+    }
+  }
+
+  // delete idb blobs + meta in one tx
+  const db2 = await openDB();
+  const tx2 = db2.transaction([META_STORE, BLOB_STORE], 'readwrite');
+  const blobStore = tx2.objectStore(BLOB_STORE);
+  const metaStore = tx2.objectStore(META_STORE);
+  for (const m of targets) {
+    if (m.storage === 'idb') { try { blobStore.delete(m.id); } catch {} }
+    try { metaStore.delete(m.id); } catch {}
+  }
+  await new Promise<void>((res, rej) => { tx2.oncomplete = () => res(); tx2.onerror = () => rej(tx2.error); tx2.onabort = () => rej(tx2.error); });
+  db2.close();
+
+  // delete notes in this env
+  const db3 = await openDB();
+  const notes = await withReq<any[]>(db3.transaction(NOTES_STORE, 'readonly').objectStore(NOTES_STORE).getAll());
+  const noteIds = notes.filter((n) => (n.env ?? 'main') === env).map((n) => n.id);
+  db3.close();
+  if (noteIds.length) {
+    const db4 = await openDB();
+    const tx4 = db4.transaction(NOTES_STORE, 'readwrite');
+    const ns = tx4.objectStore(NOTES_STORE);
+    for (const id of noteIds) { try { ns.delete(id); } catch {} }
+    await new Promise<void>((res, rej) => { tx4.oncomplete = () => res(); tx4.onerror = () => rej(tx4.error); tx4.onabort = () => rej(tx4.error); });
+    db4.close();
+  }
+}
+
 // ---------- Notes API ----------
-export async function saveNote(draft: Omit<Note, 'createdAt'|'updatedAt'> & { id?: number }): Promise<number> {
+export async function saveNote(
+  draft: Omit<Note, 'createdAt'|'updatedAt'> & { id?: number },
+  env?: string
+): Promise<number> {
   const now = new Date().toISOString();
+  const currEnv = (env ?? getCurrentEnv());
   const db = await openDB();
   const tx = db.transaction(NOTES_STORE, 'readwrite');
   const store = tx.objectStore(NOTES_STORE);
@@ -174,14 +226,15 @@ export async function saveNote(draft: Omit<Note, 'createdAt'|'updatedAt'> & { id
       ...(current ?? {}),
       ...draft,
       updatedAt: now,
-      createdAt: current?.createdAt ?? now
+      createdAt: current?.createdAt ?? now,
+      env: currEnv
     };
     await withReq(store.put(updated as any));
     await new Promise<void>((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
     db.close();
     return draft.id;
   } else {
-    const toAdd: Note = { ...draft, createdAt: now, updatedAt: now };
+    const toAdd: Note = { ...draft, createdAt: now, updatedAt: now, env: currEnv };
     const idKey = await withReq<IDBValidKey>(store.add(toAdd as any));
     await new Promise<void>((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
     db.close();

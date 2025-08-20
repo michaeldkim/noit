@@ -51,7 +51,7 @@ export default function App() {
   const hasFiles = files.length > 0;
 
   return (
-    <div className="min-h-dvh bg-slate-950 text-slate-100">
+    <div className="min-h-dvh bg-slate-950 text-slate-100 h-max">
       <header className="fixed inset-x-0 top-0 z-30">
         <div className="relative mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <button
@@ -78,12 +78,12 @@ export default function App() {
         </div>
       </header>
 
-      <main className="px-6 pb-24 pt-16">
-        <section className="mx-auto w-full">{/* wider page width */}
-          <div className="flex justify-between px-10">
+      <main className="px-6 pb-24 pt-16 h-full">
+        <section className="mx-auto w-full">
+          <div className="grid grid-cols-3 gap-6 px-10">
             {/* accounts list on the LEFT when accounts kind is active */}
 
-            <aside className={"basis-1/4"}>
+            <div className={"basis-1/4"}>
               <AccountsList
                 env={env}
                 refreshSignal={accountsRefresh}
@@ -92,7 +92,7 @@ export default function App() {
                   setPrefillAccount({ title: a.title, body: a.body });
                 }}
               />
-            </aside>
+            </div>
 
 
             {/* notepad column adjusts based on side panels */}
@@ -118,6 +118,8 @@ export default function App() {
               </aside>
             )}
           </div>
+
+          
         </section>
 
         {/* (optional) other sections below */}

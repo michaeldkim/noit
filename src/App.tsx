@@ -1,17 +1,35 @@
 // FILE: src/App.tsx
 // Only the container width and grid spans changed.
-import React from 'react';
-import { InfoModal, UploadOverlay, SlidePanel, Notepad, FileList, GlobalSearchModal, AccountsList } from './components';
-import { getCurrentEnv } from './lib/env';
-import { listFiles } from './lib/idb';
-import type { FileMeta, NoteKind } from './types';
+import React from "react";
+import {
+  InfoModal,
+  UploadOverlay,
+  SlidePanel,
+  Notepad,
+  FileList,
+  GlobalSearchModal,
+  AccountsList,
+  ToDoList,
+} from "./components";
+import { getCurrentEnv } from "./lib/env";
+import { listFiles, setTodoDone } from "./lib/idb";
+import type { FileMeta, NoteKind, ToDoValue } from "./types";
 
 export default function App() {
   const [files, setFiles] = React.useState<FileMeta[]>([]);
   const [refresh, setRefresh] = React.useState(0);
   const [accountsRefresh, setAccountsRefresh] = React.useState(0); // accounts list refresh
-  const [noteKind, setNoteKind] = React.useState<NoteKind>('notes');
-  const [prefillAccount, setPrefillAccount] = React.useState<{ title?: string; body?: string }>();
+  const [noteKind, setNoteKind] = React.useState<NoteKind>("notes");
+  const [prefillAccount, setPrefillAccount] = React.useState<{
+    id?: number;
+    title?: string;
+    body?: string;
+  }>();
+  const [todoRefresh, setTodoRefresh] = React.useState(0);
+  const [prefillTodo, setPrefillTodo] = React.useState<{
+    id?: number;
+    value: ToDoValue;
+  }>();
   const [infoOpen, setInfoOpen] = React.useState(false);
   const [uploadOpen, setUploadOpen] = React.useState(false);
   //const [selected, setSelected] = React.useState<GroupKey | null>(null);
@@ -32,20 +50,28 @@ export default function App() {
     const DEBUG_KEYS = false; // set false to silence logs
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      const tag = (t?.tagName || '').toLowerCase();
-      const isEditable = (t?.isContentEditable === true) || tag === 'input' || tag === 'textarea';
-      if (DEBUG_KEYS) console.log('[hotkey]', { key: e.key, code: e.code, ctrl: e.ctrlKey, tag });
+      const tag = (t?.tagName || "").toLowerCase();
+      const isEditable =
+        t?.isContentEditable === true || tag === "input" || tag === "textarea";
+      if (DEBUG_KEYS)
+        console.log("[hotkey]", {
+          key: e.key,
+          code: e.code,
+          ctrl: e.ctrlKey,
+          tag,
+        });
       if (isEditable) return; // don't hijack while typing
-      const key = (e.key || '').toLowerCase();
+      const key = (e.key || "").toLowerCase();
       const code = e.code;
-      const isCtrlSpace = e.ctrlKey && (code === 'Space' || key === ' ' || key === 'spacebar');
+      const isCtrlSpace =
+        e.ctrlKey && (code === "Space" || key === " " || key === "spacebar");
       if (isCtrlSpace) {
         e.preventDefault();
         setSearchOpen(true);
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   const hasFiles = files.length > 0;
@@ -55,12 +81,12 @@ export default function App() {
       <header className="fixed inset-x-0 top-0 z-30">
         <div className="relative mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <button
-            aria-label={panelOpen ? 'close panel' : 'open panel'}
-            title={panelOpen ? 'close panel' : 'open panel'}
+            aria-label={panelOpen ? "close panel" : "open panel"}
+            title={panelOpen ? "close panel" : "open panel"}
             onClick={() => setPanelOpen((v) => !v)}
             className="fixed px-2 py-1 left-3 top-3 z-40 flex h-8 w-auto items-center justify-center rounded-full font-bold text-slate-100 hover:bg-indigo-800"
           >
-            {panelOpen ? '):' : env + ' (:'}
+            {panelOpen ? "):" : env + " (:"}
           </button>
         </div>
         <div className="fixed  left-1/2 top-1.1 -translate-x-1/2 -translate-y-1/2">
@@ -82,31 +108,64 @@ export default function App() {
         <section className="mx-auto w-full">
           <div className="grid grid-cols-3 gap-6 px-10">
             {/* accounts list on the LEFT when accounts kind is active */}
-
-            <div className={"basis-1/4"}>
-              <AccountsList
-                env={env}
-                refreshSignal={accountsRefresh}
-                onSelect={(a) => {
-                  setNoteKind('accounts');
-                  setPrefillAccount({ title: a.title, body: a.body });
-                }}
-              />
+            <div className="col-span-1 flex min-h-0 h-[calc(100vh-8rem)] flex-col gap-4">
+              <div className="basis-1/3 min-h-0">
+                <AccountsList
+                  env={env}
+                  refreshSignal={accountsRefresh}
+                  onSelect={(a) => {
+                    setNoteKind("accounts");
+                    setPrefillAccount({
+                      id: a.id,
+                      title: a.title,
+                      body: a.body,
+                    });
+                  }}
+                />
+              </div>
+              <div className="basis-2/3 min-h-0">
+                <ToDoList
+                  env={env}
+                  refreshSignal={todoRefresh}
+                  onSelect={(row) => {
+                    setNoteKind("to-do");
+                    let val: ToDoValue = {
+                      title: row.title,
+                      priority: row.priority,
+                      due: row.due,
+                      info: "",
+                      done: !!row.done,
+                    };
+                    try {
+                      const parsed = row.rawBody ? JSON.parse(row.rawBody) : {};
+                      val.info =
+                        typeof parsed.info === "string" ? parsed.info : "";
+                    } catch {}
+                    setPrefillTodo({ id: row.id, value: val });
+                  }}
+                  onToggleDone={async (id, next) => {
+                    await setTodoDone(id, next);
+                    setTodoRefresh((n) => n + 1);
+                  }}
+                />
+              </div>
             </div>
-
-
             {/* notepad column adjusts based on side panels */}
-            <div
-              className={"basis-1/3 "}
-            >
+            <div className={"basis-1/3 "}>
               <Notepad
                 env={env}
                 kind={noteKind}
                 onKindChange={setNoteKind}
                 prefillAccount={prefillAccount}
+                prefillTodo={prefillTodo}
                 onFilesUploaded={() => setRefresh((n) => n + 1)}
                 onSaved={(k) => {
-                  if (k === 'accounts') setAccountsRefresh((n) => n + 1);
+                  if (k === "accounts") setAccountsRefresh((n) => n + 1);
+                  if (k === "to-do") setTodoRefresh((n) => n + 1);
+                }}
+                onDeleted={() => {
+                  setAccountsRefresh((n) => n + 1);
+                  setPrefillAccount(undefined);
                 }}
               />
             </div>
@@ -118,11 +177,7 @@ export default function App() {
               </aside>
             )}
           </div>
-
-          
         </section>
-
-        {/* (optional) other sections below */}
       </main>
 
       <button
@@ -146,10 +201,16 @@ export default function App() {
         files={files}
         onClose={() => setPanelOpen(false)}
         onFaq={() => setInfoOpen(true)}
-        onEnvChange={(e) => { setEnv(e); setRefresh((n) => n + 1); }}
+        onEnvChange={(e) => {
+          setEnv(e);
+          setRefresh((n) => n + 1);
+        }}
         onChanged={() => setRefresh((n) => n + 1)}
       />
-      <GlobalSearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
+      <GlobalSearchModal
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+      />
     </div>
   );
 }

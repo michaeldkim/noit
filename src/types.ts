@@ -24,3 +24,13 @@ export interface Note {
   updatedAt: string;
   env?: string;
 }
+
+export type ToDoPriority = 'high' | 'normal' | 'can-wait';
+
+export type ToDoValue = {
+  title: string;          // task / title
+  priority: ToDoPriority; // default "normal"
+  due: string;            // YYYY-MM-DD
+  info: string;           // additional information
+  done?: boolean;         // optional completed flag
+};

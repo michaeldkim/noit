@@ -10,6 +10,7 @@ import {
   GlobalSearchModal,
   AccountsList,
   ToDoList,
+  EmailModal,
 } from "./components";
 import { getCurrentEnv } from "./lib/env";
 import { listFiles, setTodoDone } from "./lib/idb";
@@ -36,6 +37,7 @@ export default function App() {
   const [panelOpen, setPanelOpen] = React.useState(false); // slide panel toggle
   const [searchOpen, setSearchOpen] = React.useState(false); // ctrl+k
   const [env, setEnv] = React.useState<string>(getCurrentEnv());
+  const [emailOpen, setEmailOpen] = React.useState(false);
 
   React.useEffect(() => {
     (async () => {
@@ -100,6 +102,14 @@ export default function App() {
             <kbd className="hidden sm:inline rounded border border-slate-600 bg-slate-900 px-1 text-[10px] leading-4 text-slate-300">
               ctrl + space
             </kbd>
+          </button>
+          <button
+            aria-label="open gmail"
+            title="open gmail"
+            onClick={() => setEmailOpen(true)}
+            className="ml-2 inline-flex items-center rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-sm hover:bg-slate-700"
+          >
+            gmail
           </button>
         </div>
       </header>
@@ -210,6 +220,14 @@ export default function App() {
       <GlobalSearchModal
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
+      />
+      <EmailModal
+        open={emailOpen}
+        onClose={() => setEmailOpen(false)}
+        onSuggest={(v) => {
+          setNoteKind("to-do");
+          setPrefillTodo({ value: v });
+        }}
       />
     </div>
   );

@@ -9,4 +9,5 @@ export { default as ConfirmModal } from './ConfirmModal';
 export { default as GlobalSearchModal } from './GlobalSearchModal';
 export { default as AccountsEditor } from './AccountsEditor';
 export { default as AccountsList } from './AccountsList';
-export { default as ToDoList } from './ToDoList'
+export { default as ToDoList } from './ToDoList';
+export { default as EmailModal } from  './EmailModal';
